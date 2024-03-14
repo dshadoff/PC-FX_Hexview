@@ -1,0 +1,7 @@
+binary hexview
+name Hexview Test
+maker dshadoff
+makerid n2c
+date 20240312
+country 1
+version 1
