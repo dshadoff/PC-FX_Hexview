@@ -78,7 +78,10 @@ volatile uint16_t * const MEM_6270A_SR = (uint16_t *) 0x80000400;
 
 int stepval = 0;
 
-
+enum HexFormat {
+	FMT_HEX,
+	FMT_ASCII
+};
 
 char *hex_lookup = "0123456789ABCDEF";
 
@@ -311,7 +314,9 @@ int i;
    }
 }
 
-void hex_format_line(uint8_t *bin_buf, char *output_string)
+/* TODO */
+
+void hex_format_line(enum HexFormat fmt_type, uint8_t *bin_buf, char *output_string)
 {
 int i;
 int out_ind = 0;
@@ -319,13 +324,26 @@ int temp;
 
    for (i = 0; i < 16; i++)
    {
-      temp = ((*(bin_buf + i)) >> 4) & 0x0F;
-      *(output_string + out_ind) = hex_lookup[temp];
-      out_ind++;
+      if (fmt_type == FMT_HEX) {
+         temp = ((*(bin_buf + i)) >> 4) & 0x0F;
+         *(output_string + out_ind) = hex_lookup[temp];
+         out_ind++;
 
-      temp = (*(bin_buf + i)) & 0x0F;
-      *(output_string + out_ind) = hex_lookup[temp];
-      out_ind++;
+         temp = (*(bin_buf + i)) & 0x0F;
+         *(output_string + out_ind) = hex_lookup[temp];
+         out_ind++;
+      }
+      else {
+         *(output_string + out_ind) = ' ';
+         out_ind++;
+
+         temp = *(bin_buf + i);
+	 if ((temp >= 0x20) && (temp <= 0x7F))
+            *(output_string + out_ind) = (char)temp;
+         else
+            *(output_string + out_ind) = ' ';
+         out_ind++;
+      }
       
       if ((i == 15)) {
          *(output_string + out_ind) = 0x00;
@@ -349,6 +367,7 @@ char buf[10];
 char range_buf[24];
 char hexdata[64];
 char * pointer;
+enum HexFormat FmtType = FMT_HEX;
 
    init();
 
@@ -377,11 +396,17 @@ char * pointer;
       prevjoy1 = joy1;
       joy1 = joypad;
 
+      FmtType = FMT_HEX;
+
       offset = 256;
       pointer = "   ^";
+
       if (((joy1 >> 28) & 0x0F) == PAD_TYPE_FXPAD)
       {
 
+         if (joy1 & JOY_SELECT) {
+            FmtType = FMT_ASCII;
+	 }
          if (joy1 & JOY_VI) {
             offset = 4096;
             pointer = "  ^ ";
@@ -414,7 +439,7 @@ char * pointer;
 
       for (i = 0; i < 16; i++)
       {
-         hex_format_line( &mem_buf[(i*16)], hexdata );
+         hex_format_line( FmtType, &mem_buf[(i*16)], hexdata );
 
          print_at(LEFT_EDGE+3, HEXTITLE_LINE+i+1, PAL_TEXT, hexdata);
       }
